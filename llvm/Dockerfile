@@ -11,4 +11,4 @@ RUN cd /src/llvm/build && cmake -DLLVM_TARGETS_TO_BUILD="X86;Lanai" ..
 RUN cd /src/llvm/build && make -j 3
 RUN cd /src/llvm/build && make install
 
-ENTRYPOINT /bin/bash
+WORKDIR /mnt/
