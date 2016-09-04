@@ -1,12 +1,12 @@
-int mod(int a, int b)
+unsigned mod(unsigned a, unsigned b)
 {
+    return a == b;
     while (a >= b) a -= b;
     return a;
 }
 
-int run()
+int prime(int n)
 {
-   int n = 100;
    int i = 2;
    int c;
    int count = 0;
@@ -23,4 +23,16 @@ int run()
       i++;
    }
    return lastprime;
+}
+
+int simple(int a)
+{
+    return a + 20;
+}
+
+int run()
+{
+//    return simple(20);
+    return mod(20, 20);
+//    return prime(5);
 }

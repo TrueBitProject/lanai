@@ -1,6 +1,7 @@
 #include <fstream>
 #include <climits>
 #include <iostream>
+#include <iomanip>
 #include <string>
 #include <exception>
 #include <functional>
@@ -47,11 +48,11 @@ bool condition(uint16_t condition, bool invert, MachineState const& state)
 	else if (condition == 2)
 		throw new exception;
 	else if (condition == 3)
-		takeBranch = !state.zero;
+		takeBranch = !state.zero; // TODO Is that correct??
 	else if (condition == 4)
-		takeBranch = !state.overflow;
+		takeBranch = !state.overflow; // TODO Is that correct??
 	else if (condition == 5)
-		takeBranch = !state.negative;
+		takeBranch = !state.negative; // TODO Is that correct??
 	else if (condition == 6)
 	{
 		if (invert)
@@ -72,6 +73,27 @@ bool condition(uint16_t condition, bool invert, MachineState const& state)
 		takeBranch = !takeBranch;
 
 	return takeBranch;
+}
+
+string operationName(uint16_t op)
+{
+	if (op == 0)
+		return "add";
+	else if (op == 1)
+		return "addc";
+	else if (op == 2)
+		return "sub";
+	else if (op == 3)
+		return "subb";
+	else if (op == 4)
+		return "and";
+	else if (op == 5)
+		return "or";
+	else if (op == 6)
+		return "xor";
+	else if (op == 7)
+		return "shift";
+	return "???";
 }
 
 uint32_t operation(uint16_t op, uint32_t a, uint32_t b, MachineState& state, bool updateFlags)
@@ -121,7 +143,7 @@ uint32_t load32(uint32_t index, MachineState& state)
 	state.memory.resize(max<size_t>(state.memory.length(), index + 4), 0);
 	uint32_t result = 0;
 	for (size_t i = 0; i < 4; ++i)
-		result |= (uint32_t(state.memory[index + i]) << (24 - i * 8));
+		result |= (uint32_t(uint8_t(state.memory[index + i])) << (24 - i * 8));
 	return result;
 }
 
@@ -139,11 +161,21 @@ uint32_t load8(uint32_t index, MachineState& state)
 
 void hexsummary(string const& data)
 {
-	cout << hex << data.length() << endl;
-	for (auto const& x: data)
-		if (x != 0)
-			cout << uint32_t(x);
-
+	cout << hex;
+	unsigned rowlength = 32;
+	for (size_t i = 0; i < data.length(); i += rowlength)
+	{
+		if (data.substr(i, rowlength) == string(rowlength, 0))
+			continue;
+		cout << setw(4) << i << ":";
+		for (size_t j = 0; j < rowlength; j++)
+		{
+			if (j % 4 == 0)
+				cout << " ";
+			cout << setfill('0') << setw(2) << unsigned(uint8_t(data[i + j]));
+		}
+		cout << endl;
+	}
 }
 
 void registerStore(uint16_t reg, uint32_t value, unsigned delayForPC, MachineState& state)
@@ -151,17 +183,8 @@ void registerStore(uint16_t reg, uint32_t value, unsigned delayForPC, MachineSta
 	if (reg == 0 || reg == 1)
 		return;
 	else if (&state.registers[reg] == &state.pc)
-	{
-		if (delayForPC == 0)
-			state.pc = value;
-		else
-			state.pcDelay[delayForPC - 1] = value;
-		for (unsigned i = delayForPC; i < 3; ++i)
-		{
-			value += 4;
+		for (unsigned i = delayForPC; i < 3; ++i, value += 4)
 			state.pcDelay[i] = value;
-		}
-	}
 	else
 		state.registers[reg] = value;
 }
@@ -171,9 +194,8 @@ void run(string const& _text, uint32_t entrypoint)
 	MachineState state;
 	state.fp = 0x1000;
 	state.sp = 0x1000;
-	state.pcDelay[0] = entrypoint;
-	state.pcDelay[1] = entrypoint + 4;
-	state.pcDelay[2] = entrypoint + 8;
+	store32(state.fp, uint32_t(-1), state);
+	registerStore(2, entrypoint, 0, state);
 
 	while (true)
 	{
@@ -183,13 +205,27 @@ void run(string const& _text, uint32_t entrypoint)
 		state.pcDelay[0] = state.pcDelay[1];
 		state.pcDelay[1] = state.pcDelay[2];
 		state.pcDelay[2] = state.pcDelay[1] + 4;
-		uint32_t instruction = loadInstruction(_text.data() + state.pc);
-		unsigned opcode = instruction >> 28;
+		cout << "---------------------------------------------------" << endl;
 		cout << "PC: " << hex << state.pc << endl;
-		cout << "Opcode: " << hex << opcode << endl;
-		cout << "Mem: ";
+		cout << "Mem: " << endl;
 		hexsummary(state.memory);
 		cout << endl;
+		cout << "Regs: ";
+		for (unsigned i = 0; i < 32; i += 4)
+			cout << hex << i << ": " <<
+					state.registers[i] << " " <<
+					state.registers[i + 1] << " " <<
+					state.registers[i + 2] << " " <<
+					state.registers[i + 3] << endl;
+		if (state.pc == uint32_t(-1))
+		{
+			// Program terminated
+			cout << "Program terminated." << endl << "Return value: " << setw(8) << hex << state.rv << endl;
+			return;
+		}
+		uint32_t instruction = loadInstruction(_text.data() + state.pc);
+			unsigned opcode = instruction >> 28;
+		cout << "Opcode: " << hex << opcode << endl;
 		uint16_t rd = (instruction >> 23) & 0x1f;
 		uint16_t rs1 = (instruction >> 18) & 0x1f;
 		uint16_t rs2 = (instruction >> 11) & 0x1f;
@@ -199,7 +235,7 @@ void run(string const& _text, uint32_t entrypoint)
 
 		if ((opcode & 8) == 0) // Register Immediate (RI)
 		{
-			cout << "RI -- opcode: " << opcode << " rd: " << rd << " rs1: " << rs1 << " f: " << p << " h: " << q << " constant: " << constant << endl;
+			cout << "RI -- " << operationName(opcode) << " rd: " << rd << " rs1: " << rs1 << " f: " << p << " h: " << q << " constant: " << constant << endl;
 
 			uint32_t constant32 = q ? constant << 16 : constant;
 			if (opcode == 4)
@@ -215,6 +251,7 @@ void run(string const& _text, uint32_t entrypoint)
 		else if (opcode == 0xc) // Register Register (RR)
 		{
 			uint16_t op = (instruction >> 8) & 0x7;
+			cout << "RR -- " << operationName(op) << " rs1: " << rs1 << " rs2: " << rs2 << " f: " << p << constant << endl;
 			if (op == 7)
 				throw new exception;
 			uint32_t result = operation(op, state.registers[rs1], state.registers[rs2], state, p);
@@ -241,6 +278,7 @@ void run(string const& _text, uint32_t entrypoint)
 		{
 			bool store = opcode & 1;
 			uint16_t op = (instruction >> 8) & 0x7;
+			cout << "RRM -- store: " << store << " rd: " << rd << " rs1: " << rs1 << " p: " << p << " q: " << q << " constant: " << constant << endl;
 			if (op == 7)
 				throw new exception;
 			bool y = instruction & 4;
@@ -288,18 +326,49 @@ void run(string const& _text, uint32_t entrypoint)
 		else if (opcode == 0xe) // Conditional branch
 		{
 			uint16_t cond = (instruction >> 24) & 7;
-			uint32_t constantTimes4 = instruction & (((uint32_t(1) << 23) - 1) << 2);
+			uint32_t value = 0;
 			bool invert = instruction & 1;
 			bool takeBranch = condition(cond, invert, state);
-			cout << "BR: condition: " << cond << " i: " << invert << " constant*4: " << constantTimes4 << endl;
+			cout << "BR: condition: " << cond << " i: " << invert << " constant*4: " << value << endl;
+			uint16_t targetReg = 2; // pc
+			if (instruction & 0x2)
+			{
+				if (instruction & (uint32_t(1) << 24))
+					value = state.registers[rs1] + (instruction & (((uint32_t(1) << 14) - 1) << 2));
+				else
+				{
+					value = takeBranch;
+					targetReg = rs1;
+				}
+			}
+			else
+				value = instruction & (((uint32_t(1) << 23) - 1) << 2);
 			if (takeBranch)
-				registerStore(2 /* pc */, constantTimes4, 1, state);
+				registerStore(targetReg, value, 1, state);
 		}
 		else if (opcode == 0xf) // Special Load/Store and others
 		{
-			cout << "Opcode not implemented." << endl;
-			throw new exception;
-
+			if (!p && q)
+			{
+				cout << "Opcode not implemented." << endl;
+				throw new exception;
+			}
+			// special load store
+			cout << "SLS: rd: " << rd << " addr upper: " << rs1 << " addr lower: " << constant  << endl;
+			if (rs1 != 0)
+				throw new exception; // TODO check how to exactly combine them
+			if (q)
+				store32(constant, state.registers[rd], state);
+			else
+			{
+				uint32_t value;
+				if (p)
+					value = constant;
+				else
+					// clear two lower-order bits
+					value = load32(constant & ~uint32_t(3), state);
+				registerStore(rd, value, 2, state);
+			}
 		}
 		else if (opcode == 0xd) // Special instructions (popc, leadz, trailz)
 		{

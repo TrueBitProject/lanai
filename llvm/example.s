@@ -12,48 +12,33 @@ mod:                                    ! @mod
 	or	%r6, 0x0, %r9
 	st	%r6, -12[%fp]
 	st	%r7, -16[%fp]
+	ld	 -12[%fp], %r6
+	sub.f	%r6, %r7, %r0
+	seq	%rv
 	st	%r3, -20[%fp]
-	bt	.LBB0_1
 	st	%r9, -24[%fp]
-.LBB0_1:                                ! %while.cond
-                                        ! =>This Inner Loop Header: Depth=1
-	ld	 -12[%fp], %r3
-	ld	 -16[%fp], %r9
-	sub.f	%r3, %r9, %r0
-	blt	.LBB0_3
-	nop
-	bt	.LBB0_2
-	nop
-.LBB0_2:                                ! %while.body
-                                        !   in Loop: Header=BB0_1 Depth=1
-	ld	 -16[%fp], %r3
-	ld	 -12[%fp], %r9
-	sub	%r9, %r3, %r3
-	bt	.LBB0_1
-	st	%r3, -12[%fp]
-.LBB0_3:                                ! %while.end
-	ld	 -12[%fp], %rv
 	ld	-4[%fp], %pc ! return
 	add	%fp, 0x0, %sp
 	ld	 -8[%fp], %fp
 .Lfunc_end0:
 	.size	mod, .Lfunc_end0-mod
 
-	.globl	run
+	.globl	prime
 	.p2align	2
-	.type	run,@function
-run:                                    ! @run
+	.type	prime,@function
+prime:                                  ! @prime
 ! BB#0:                                 ! %entry
 	st	%fp, [--%sp]
 	add	%sp, 0x8, %fp
 	sub	%sp, 0x340, %sp
-	mov	0x64, %r3
-	st	%r3, -12[%fp]
-	mov	0x2, %r3
-	st	%r3, -16[%fp]
+	or	%r6, 0x0, %r3
+	st	%r6, -12[%fp]
+	mov	0x2, %r6
+	st	%r6, -16[%fp]
 	st	%r0, -24[%fp]
+	st	%r6, -828[%fp]
 	bt	.LBB1_1
-	st	%r3, -828[%fp]
+	st	%r3, -832[%fp]
 .LBB1_1:                                ! %while.cond
                                         ! =>This Loop Header: Depth=1
                                         !     Child Loop BB1_3 Depth 2
@@ -138,7 +123,45 @@ run:                                    ! @run
 	add	%fp, 0x0, %sp
 	ld	 -8[%fp], %fp
 .Lfunc_end1:
-	.size	run, .Lfunc_end1-run
+	.size	prime, .Lfunc_end1-prime
+
+	.globl	simple
+	.p2align	2
+	.type	simple,@function
+simple:                                 ! @simple
+! BB#0:                                 ! %entry
+	st	%fp, [--%sp]
+	add	%sp, 0x8, %fp
+	sub	%sp, 0x10, %sp
+	or	%r6, 0x0, %r3
+	st	%r6, -12[%fp]
+	add	%r6, 0x14, %rv
+	st	%r3, -16[%fp]
+	ld	-4[%fp], %pc ! return
+	add	%fp, 0x0, %sp
+	ld	 -8[%fp], %fp
+.Lfunc_end2:
+	.size	simple, .Lfunc_end2-simple
+
+	.globl	run
+	.p2align	2
+	.type	run,@function
+run:                                    ! @run
+! BB#0:                                 ! %entry
+	st	%fp, [--%sp]
+	add	%sp, 0x8, %fp
+	sub	%sp, 0x8, %sp
+	mov	0x14, %r3
+	or	%r3, 0x0, %r6
+	add	%pc, 0x10, %rca
+	st	%rca, [--%sp]
+	bt	mod
+	or	%r3, 0x0, %r7
+	ld	-4[%fp], %pc ! return
+	add	%fp, 0x0, %sp
+	ld	 -8[%fp], %fp
+.Lfunc_end3:
+	.size	run, .Lfunc_end3-run
 
 
 	.ident	"clang version 4.0.0 (http://llvm.org/git/clang.git 656204ffb45bbf056101265d3ae4811638184c17) (http://llvm.org/git/llvm.git c662b7eae3c4ffd44ce42e85024d94015ac5b08a)"
