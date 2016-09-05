@@ -361,19 +361,13 @@ void run(string const& _text, uint32_t entrypoint)
 				cout << "Opcode not implemented." << endl;
 				throw new exception;
 			}
-			// special load store
+			uint32_t value = (uint32_t(rs1) << 16) | constant;
 			cout << "SLS: rd: " << rd << " addr upper: " << rs1 << " addr lower: " << constant  << endl;
-			if (rs1 != 0)
-				throw new exception; // TODO check how to exactly combine them
 			if (q)
-				store32(constant, state.registers[rd], state);
+				store32(value & ~uint32_t(3), state.registers[rd], state);
 			else
 			{
-				uint32_t value;
-				if (p)
-					value = constant;
-				else
-					// clear two lower-order bits
+				if (!p)
 					value = load32(constant & ~uint32_t(3), state);
 				registerStore(rd, value, 2, state);
 			}
