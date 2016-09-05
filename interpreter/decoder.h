@@ -22,7 +22,7 @@ struct MachineState
 	bool zero = false;
 	bool negative = false;
 	bool overflow = false;
-	//bool carry = false; // TODO
+	bool carry = false;
 
 	// Calling conventions:
 	// memory at fp contains return address, r6 holds first argument, rv/r8 receives return value

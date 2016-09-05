@@ -44,15 +44,15 @@ bool condition(uint16_t condition, bool invert, MachineState const& state)
 	if (condition == 0)
 		takeBranch = true;
 	else if (condition == 1)
-		throw new exception;
+		takeBranch = state.carry && !state.zero;
 	else if (condition == 2)
-		throw new exception;
+		takeBranch = !state.carry;
 	else if (condition == 3)
-		takeBranch = !state.zero; // TODO Is that correct??
+		takeBranch = !state.zero;
 	else if (condition == 4)
-		takeBranch = !state.overflow; // TODO Is that correct??
+		takeBranch = !state.overflow;
 	else if (condition == 5)
-		takeBranch = !state.negative; // TODO Is that correct??
+		takeBranch = !state.negative;
 	else if (condition == 6)
 	{
 		if (invert)
@@ -99,14 +99,22 @@ string operationName(uint16_t op)
 uint32_t operation(uint16_t op, uint32_t a, uint32_t b, MachineState& state, bool updateFlags)
 {
 	uint32_t result = 0;
-	if (op == 0)
-		result = a + b;
-	else if (op == 1)
-		throw new exception; // result = a + b + (state.carry ? 1 : 0);
-	else if (op == 2)
-		result = a + ~b + 1;
-	else if (op == 3)
-		throw new exception; // result = a + ~b + (state.carry ? 1 : 0);
+	bool carry = false;
+	if (op < 4)
+	{
+		// 0: add, 1: addc, 2: sub, 3: subb
+		uint32_t bmod = op >= 2 ? ~b: b;
+		uint32_t c = 0;
+		if (op == 1)
+			c = state.carry;
+		else if (op == 2)
+			c = 1;
+		else if (op == 3)
+			c = !state.carry;
+		result = a + bmod + c;
+		if (updateFlags && (uint64_t(a) + uint64_t(bmod) + uint64_t(c) >= (uint64_t(1) << 32)))
+			carry = true;
+	}
 	else if (op == 4)
 		result = a & b;
 	else if (op == 5)
@@ -118,15 +126,14 @@ uint32_t operation(uint16_t op, uint32_t a, uint32_t b, MachineState& state, boo
 
 	if (updateFlags)
 	{
+		uint32_t msb = 0x80000000;
 		state.zero = result == 0;
-		state.negative = result & uint32_t(0x80000000);
+		state.negative = result & msb;
 		if (op < 4)
-		{
-			uint32_t msb = 0x80000000;
-			state.overflow = ((a & msb) == (b & msb) && (a & msb) != (result & msb));
-		}
+			state.overflow = (((a & msb) == (b & msb)) && ((a & msb) != (result & msb)));
 		else
 			state.overflow = false;
+		state.carry = carry;
 	}
 	return result;
 }
@@ -217,6 +224,7 @@ void run(string const& _text, uint32_t entrypoint)
 					state.registers[i + 1] << " " <<
 					state.registers[i + 2] << " " <<
 					state.registers[i + 3] << endl;
+		cout << "Flags: " << (state.zero ? "Z" : "z") << (state.overflow ? "O" : "o") << (state.negative ? "N" : "n") << (state.carry ? "C" : "c") << endl;
 		if (state.pc == uint32_t(-1))
 		{
 			// Program terminated
@@ -325,11 +333,11 @@ void run(string const& _text, uint32_t entrypoint)
 		}
 		else if (opcode == 0xe) // Conditional branch
 		{
-			uint16_t cond = (instruction >> 24) & 7;
+			uint16_t cond = (instruction >> 25) & 7;
 			uint32_t value = 0;
 			bool invert = instruction & 1;
 			bool takeBranch = condition(cond, invert, state);
-			cout << "BR: condition: " << cond << " i: " << invert << " constant*4: " << value << endl;
+			cout << "BR: condition: " << cond << " i: " << invert << " constant: " << constant << endl;
 			uint16_t targetReg = 2; // pc
 			if (instruction & 0x2)
 			{
@@ -471,7 +479,7 @@ uint32_t link(string& _data)
 					reinterpret_cast<ptrdiff_t>(hdr) + swap_endian(section->sh_offset) + symoff
 				);
 				char const* name = reinterpret_cast<char const *>(hdr) + swap_endian(strtab->sh_offset) + swap_endian(symbol->st_name);
-				if (string(name) == "run")
+				if (string(name) == "main")
 					entrypoint = elf_get_symval(hdr, symbol);
 			}
 		}

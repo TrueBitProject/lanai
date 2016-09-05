@@ -1,6 +1,5 @@
 unsigned mod(unsigned a, unsigned b)
 {
-    return a == b;
     while (a >= b) a -= b;
     return a;
 }
@@ -30,9 +29,14 @@ int simple(int a)
     return a + 20;
 }
 
-int run()
+int compare(unsigned a, unsigned b)
+{
+    return a >= b;
+}
+
+int main()
 {
 //    return simple(20);
-    return mod(20, 20);
+    return mod(0x22, 3);
 //    return prime(5);
 }

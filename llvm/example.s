@@ -12,11 +12,27 @@ mod:                                    ! @mod
 	or	%r6, 0x0, %r9
 	st	%r6, -12[%fp]
 	st	%r7, -16[%fp]
-	ld	 -12[%fp], %r6
-	sub.f	%r6, %r7, %r0
-	seq	%rv
 	st	%r3, -20[%fp]
+	bt	.LBB0_1
 	st	%r9, -24[%fp]
+.LBB0_1:                                ! %while.cond
+                                        ! =>This Inner Loop Header: Depth=1
+	ld	 -12[%fp], %r3
+	ld	 -16[%fp], %r9
+	sub.f	%r3, %r9, %r0
+	bult	.LBB0_3
+	nop
+	bt	.LBB0_2
+	nop
+.LBB0_2:                                ! %while.body
+                                        !   in Loop: Header=BB0_1 Depth=1
+	ld	 -16[%fp], %r3
+	ld	 -12[%fp], %r9
+	sub	%r9, %r3, %r3
+	bt	.LBB0_1
+	st	%r3, -12[%fp]
+.LBB0_3:                                ! %while.end
+	ld	 -12[%fp], %rv
 	ld	-4[%fp], %pc ! return
 	add	%fp, 0x0, %sp
 	ld	 -8[%fp], %fp
@@ -143,25 +159,48 @@ simple:                                 ! @simple
 .Lfunc_end2:
 	.size	simple, .Lfunc_end2-simple
 
-	.globl	run
+	.globl	compare
 	.p2align	2
-	.type	run,@function
-run:                                    ! @run
+	.type	compare,@function
+compare:                                ! @compare
 ! BB#0:                                 ! %entry
 	st	%fp, [--%sp]
 	add	%sp, 0x8, %fp
-	sub	%sp, 0x8, %sp
-	mov	0x14, %r3
-	or	%r3, 0x0, %r6
-	add	%pc, 0x10, %rca
-	st	%rca, [--%sp]
-	bt	mod
-	or	%r3, 0x0, %r7
+	sub	%sp, 0x18, %sp
+	or	%r7, 0x0, %r3
+	or	%r6, 0x0, %r9
+	st	%r6, -12[%fp]
+	st	%r7, -16[%fp]
+	ld	 -12[%fp], %r6
+	sub.f	%r6, %r7, %r0
+	suge	%rv
+	st	%r3, -20[%fp]
+	st	%r9, -24[%fp]
 	ld	-4[%fp], %pc ! return
 	add	%fp, 0x0, %sp
 	ld	 -8[%fp], %fp
 .Lfunc_end3:
-	.size	run, .Lfunc_end3-run
+	.size	compare, .Lfunc_end3-compare
+
+	.globl	main
+	.p2align	2
+	.type	main,@function
+main:                                   ! @main
+! BB#0:                                 ! %entry
+	st	%fp, [--%sp]
+	add	%sp, 0x8, %fp
+	sub	%sp, 0x10, %sp
+	st	%r0, -12[%fp]
+	mov	0x22, %r6
+	add	%pc, 0x10, %rca
+	st	%rca, [--%sp]
+	bt	mod
+	mov	0x3, %r7
+	ld	-4[%fp], %pc ! return
+	add	%fp, 0x0, %sp
+	ld	 -8[%fp], %fp
+.Lfunc_end4:
+	.size	main, .Lfunc_end4-main
 
 
 	.ident	"clang version 4.0.0 (http://llvm.org/git/clang.git 656204ffb45bbf056101265d3ae4811638184c17) (http://llvm.org/git/llvm.git c662b7eae3c4ffd44ce42e85024d94015ac5b08a)"
