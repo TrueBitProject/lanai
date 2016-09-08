@@ -1,0 +1,1 @@
+/usr/bin/c++   -std=c++11 -Wall -g   CMakeFiles/lanai-int.dir/main.cpp.o CMakeFiles/lanai-int.dir/interpreter.cpp.o CMakeFiles/lanai-int.dir/linker.cpp.o  -o lanai-int -rdynamic 

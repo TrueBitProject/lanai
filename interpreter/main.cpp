@@ -39,7 +39,7 @@ int main(int argc, char *argv[])
 	uint32_t entrypoint = Linker::link(data);
 
 	Interpreter interpreter(data);
-	interpreter.run(entrypoint);
+	interpreter.run(entrypoint, 0x10000, false);
 
 	return 0;
 }

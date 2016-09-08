@@ -96,12 +96,12 @@ uint32_t Linker::link(string& _data)
 				if (ELF32_R_TYPE(swap_endian(reltab->r_info)) != 0x03)
 				{
 					cerr << "Unknown relocation type." << endl;
-					throw new exception;
+					//throw new exception;
 				}
 				if (reltab->r_addend != 0)
 				{
 					cerr << "Nonzero addend." << endl;
-					throw new exception;
+					//throw new exception;
 				}
 				for (size_t i = 0; i < 4; symval >>= 8, ++i)
 					_data[ref + 3 - i] |= symval & 0xff;

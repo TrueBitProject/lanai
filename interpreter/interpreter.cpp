@@ -10,10 +10,10 @@
 using namespace std;
 
 
-uint32_t Interpreter::run(uint32_t entrypoint, bool verbose)
+uint32_t Interpreter::run(uint32_t entrypoint, uint32_t memsize, bool verbose)
 {
 	uint32_t exitpoint = (uint32_t(1) << 31) & ~uint32_t(3);
-	initState(entrypoint, exitpoint, 0x1000);
+	initState(entrypoint, exitpoint, memsize);
 	while (true)
 	{
 		steps++;

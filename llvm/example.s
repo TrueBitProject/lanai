@@ -182,6 +182,80 @@ compare:                                ! @compare
 .Lfunc_end3:
 	.size	compare, .Lfunc_end3-compare
 
+	.globl	select
+	.p2align	2
+	.type	select,@function
+select:                                 ! @select
+! BB#0:                                 ! %entry
+	st	%fp, [--%sp]
+	add	%sp, 0x8, %fp
+	sub	%sp, 0x20, %sp
+	or	%r7, 0x0, %r3
+	or	%r6, 0x0, %r9
+	st	%r6, -16[%fp]
+	st	%r7, -20[%fp]
+	ld	 -16[%fp], %r6
+	sub.f	%r6, %r7, %r0
+	st	%r3, -24[%fp]
+	bge	.LBB4_2
+	st	%r9, -28[%fp]
+	bt	.LBB4_1
+	nop
+.LBB4_1:                                ! %if.then
+	mov	0x1, %r3
+	bt	.LBB4_3
+	st	%r3, -12[%fp]
+.LBB4_2:                                ! %if.else
+	mov	0x2, %r3
+	bt	.LBB4_3
+	st	%r3, -12[%fp]
+.LBB4_3:                                ! %return
+	ld	 -12[%fp], %rv
+	ld	-4[%fp], %pc ! return
+	add	%fp, 0x0, %sp
+	ld	 -8[%fp], %fp
+.Lfunc_end4:
+	.size	select, .Lfunc_end4-select
+
+	.globl	fill
+	.p2align	2
+	.type	fill,@function
+fill:                                   ! @fill
+! BB#0:                                 ! %entry
+	st	%fp, [--%sp]
+	add	%sp, 0x8, %fp
+	sub	%sp, 0x60, %sp
+	bt	.LBB5_1
+	st	%r0, -92[%fp]
+.LBB5_1:                                ! %for.cond
+                                        ! =>This Inner Loop Header: Depth=1
+	ld	 -92[%fp], %r3
+	sub.f	%r3, 0x13, %r0
+	bgt	.LBB5_4
+	nop
+	bt	.LBB5_2
+	nop
+.LBB5_2:                                ! %for.body
+                                        !   in Loop: Header=BB5_1 Depth=1
+	ld	 -92[%fp], %r3
+	sh	%r3, 0x2, %r9
+	sub	%fp, 0x58, %r12
+	bt	.LBB5_3
+	st	%r3, [%r12 add %r9]
+.LBB5_3:                                ! %for.inc
+                                        !   in Loop: Header=BB5_1 Depth=1
+	ld	 -92[%fp], %r3
+	add	%r3, 0x1, %r3
+	bt	.LBB5_1
+	st	%r3, -92[%fp]
+.LBB5_4:                                ! %for.end
+	ld	 -12[%fp], %rv
+	ld	-4[%fp], %pc ! return
+	add	%fp, 0x0, %sp
+	ld	 -8[%fp], %fp
+.Lfunc_end5:
+	.size	fill, .Lfunc_end5-fill
+
 	.globl	main
 	.p2align	2
 	.type	main,@function
@@ -191,16 +265,15 @@ main:                                   ! @main
 	add	%sp, 0x8, %fp
 	sub	%sp, 0x10, %sp
 	st	%r0, -12[%fp]
-	mov	0x22, %r6
 	add	%pc, 0x10, %rca
 	st	%rca, [--%sp]
-	bt	mod
-	mov	0x3, %r7
+	bt	prime
+	mov	0x14, %r6
 	ld	-4[%fp], %pc ! return
 	add	%fp, 0x0, %sp
 	ld	 -8[%fp], %fp
-.Lfunc_end4:
-	.size	main, .Lfunc_end4-main
+.Lfunc_end6:
+	.size	main, .Lfunc_end6-main
 
 
 	.ident	"clang version 4.0.0 (http://llvm.org/git/clang.git 656204ffb45bbf056101265d3ae4811638184c17) (http://llvm.org/git/llvm.git c662b7eae3c4ffd44ce42e85024d94015ac5b08a)"

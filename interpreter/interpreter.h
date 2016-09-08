@@ -33,7 +33,7 @@ class Interpreter
 public:
 	Interpreter(std::string const& code): code(code) {}
 
-	uint32_t run(uint32_t entrypoint, bool verbose = false);
+	uint32_t run(uint32_t entrypoint, uint32_t memsize, bool verbose = false);
 
 private:
 	void initState(uint32_t entrypoint, uint32_t exitpoint, uint32_t memsize);

@@ -34,9 +34,26 @@ int compare(unsigned a, unsigned b)
     return a >= b;
 }
 
+int select(int a, int b)
+{
+    if (a < b)
+        return 1;
+    else
+        return 2;
+}
+
+int fill()
+{
+    int x[20];
+    for (int i = 0; i < 20; i++)
+        x[i] = i;
+    return x[19];
+}
+
 int main()
 {
 //    return simple(20);
-    return mod(0x22, 3);
-//    return prime(5);
+//    return mod(0x24, 3);
+    return prime(20);
+//      return fill();
 }
