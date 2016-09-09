@@ -37,6 +37,11 @@ int main(int argc, char *argv[])
 	string data = readfile(argv[1]);
 
 	uint32_t entrypoint = Linker::link(data);
+	cout << "Linked code: ";
+	for (uint32_t i = 0; i < data.size(); ++i)
+		cout << hex << setfill('0') << setw(2) << unsigned(uint8_t(data[i]));
+	cout << endl;
+	cout << "Entrypoint: 0x" << hex << entrypoint << endl;
 
 	Interpreter interpreter(data);
 	interpreter.run(entrypoint, 0x10000, false);
