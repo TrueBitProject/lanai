@@ -44,7 +44,7 @@ int main(int argc, char *argv[])
 	cout << "Entrypoint: 0x" << hex << entrypoint << endl;
 
 	Interpreter interpreter(data);
-	interpreter.run(entrypoint, 0x10000, false);
+	interpreter.run(entrypoint, 0x100000, true);
 
 	return 0;
 }

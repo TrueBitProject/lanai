@@ -55,11 +55,30 @@ uint32_t Interpreter::run(uint32_t entrypoint, uint32_t memsize, bool verbose)
 		{
 			uint16_t op = (instruction >> 8) & 0x7;
 			if (verbose)
-				cout << "RR -- " << operationName(op) << " rs1: " << rs1 << " rs2: " << rs2 << " f: " << p << constant << endl;
-			if (op == 7)
-				throw new exception;
-			uint32_t result = operation(op, reg(rs1), reg(rs2), p);
-			regStore(rd, result, 1);
+				cout << "RR -- " << operationName(op) << " rd: " << rd << " rs1: " << rs1 << " rs2: " << rs2 << " f: " << p << " constant: " << constant << endl;
+			uint32_t result = 0;
+			uint16_t cond = instruction & 7;
+			bool takeBranch = condition(cond, q);
+			uint16_t jjj = (instruction >> 3) & 0x1f;
+			if (op == 7 && jjj == 0)
+				regStore(rd, takeBranch ? rs1 : rs2, 1);
+			else
+			{
+				uint32_t b = reg(rs2);
+				bool arithmeticShift = jjj & 0x8;
+				if (op == 7)
+				{
+					if ((jjj & 0x10) != 0x10)
+						throw new exception;
+					if (int32_t(b) >= 0)
+						b &= 0x1f;
+					else
+						b = (b & 0x1f) | uint32_t(0xffffffe0);
+				}
+				result = operation(op, reg(rs1), b, p, arithmeticShift);
+				if (takeBranch)
+					regStore(rd, result, 1);
+			}
 		}
 		else if ((opcode & 0xe) == 0x8) // Register Memory (RM)
 		{
@@ -115,9 +134,9 @@ uint32_t Interpreter::run(uint32_t entrypoint, uint32_t memsize, bool verbose)
 				{
 					val = memByte(ea);
 					if (e)
-						val = int32_t(int8_t(val));
-					else
 						val = val & 0xff;
+					else
+						val = int32_t(int8_t(uint8_t(val)));
 				}
 				else if (!l)
 					throw new exception;
@@ -159,21 +178,51 @@ uint32_t Interpreter::run(uint32_t entrypoint, uint32_t memsize, bool verbose)
 		}
 		else if (opcode == 0xf) // Special Load/Store and others
 		{
-			if (!p && q)
+			if (p && q)
 			{
-				cout << "Opcode 0xf with !p && q not implemented." << endl;
-				throw new exception;
+				if (verbose)
+					cout << "SPLS: rd: " << rd << " const upper: " << rs1 << " const lower: " << constant << endl;
+				if (instruction & (1 << 15))
+					throw new exception;
+				bool y = instruction & (1 << 14);
+				bool s = instruction & (1 << 13);
+				bool e = instruction & (1 << 12);
+				p = instruction & (1 << 11);
+				q = instruction & (1 << 10);
+				int32_t constantSE = constant & 0x3ff;
+				if (constant & (constant & (1 << 9)))
+					constantSE = uint32_t(constantSE) | uint32_t(0xfffffc00);
+				uint32_t ea = reg(rs1) + (p ? constantSE : 0);
+				if (!y) throw new exception;
+				if (s)
+					memStoreByte(ea, reg(rd));
+				else
+				{
+					uint32_t value = memByte(ea);
+					if (!e)
+						value = int32_t(int8_t(uint8_t(value)));
+					regStore(rd, value, 2);
+				}
+				if (q)
+				{
+					if (isPC(rs1))
+						throw new exception; // TODO does this also have delay slots?
+					regStore(rs1, reg(rs1) + constantSE, 0);
+				}
 			}
-			uint32_t value = (uint32_t(rs1) << 16) | constant;
-			if (verbose)
-				cout << "SLS: rd: " << rd << " addr upper: " << rs1 << " addr lower: " << constant  << endl;
-			if (q)
-				memStoreWord(value, reg(rd));
 			else
 			{
-				if (!p)
-					value = memWord(constant);
-				regStore(rd, value, 2);
+				uint32_t value = (uint32_t(rs1) << 16) | constant;
+				if (verbose)
+					cout << "SLS: rd: " << rd << " p: " << p << " s: " << q << " addr upper: " << rs1 << " addr lower: " << constant  << endl;
+				if (q)
+					memStoreWord(value, reg(rd));
+				else
+				{
+					if (!p)
+						value = memWord(constant);
+					regStore(rd, value, 2);
+				}
 			}
 		}
 		else if (opcode == 0xd) // Special instructions (popc, leadz, trailz)
@@ -328,6 +377,8 @@ uint32_t Interpreter::operation(uint16_t op, uint32_t a, uint32_t b, bool update
 			result = a << amount;
 			carry = (uint64_t(a) << amount) & (uint64_t(1) << 32);
 		}
+		else if (arithmeticShift)
+			result = uint32_t(int32_t(a) >> (-amount));
 		else
 			result = a >> (-amount);
 	}
@@ -435,5 +486,5 @@ void Interpreter::memStoreWord(uint32_t pos, uint32_t value)
 void Interpreter::memStoreByte(uint32_t pos, uint32_t value)
 {
 	state.memory.resize(max<size_t>(state.memory.length(), pos + 1), 0);
-	state.memory[pos] = value & 0xff;
+	state.memory[pos] = char(uint8_t(value & 0xff));
 }
